@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Laboratorio de Chispa · Electrónica F.S.D.E.</title>
+  <meta name="description" content="Simulador de circuitos eléctricos para aprender electrónica paso a paso. Curso Auxiliar en Informática — Fundación Social de Desarrollo Ecuatoriano.">
+  <meta name="theme-color" content="#17324D">
+  <link rel="icon" href="img/chispa.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="img/chispa.svg" alt="" class="brand-logo">
+      <div class="brand-text"><b>Laboratorio de Chispa</b><span>Electrónica · F.S.D.E.</span></div>
+    </div>
+    <div class="project-box">
+      <input id="projectName" class="project-name" maxlength="60" aria-label="Nombre del proyecto" spellcheck="false">
+      <span id="saveState" class="save-state" title="Se guarda automáticamente en esta computadora"></span>
+    </div>
+    <nav class="toolbar" aria-label="Herramientas">
+      <div class="tgroup">
+        <button class="tbtn" data-act="new" title="Nuevo proyecto"><i data-icon="file-plus"></i><span>Nuevo</span></button>
+        <button class="tbtn" data-act="projects" title="Mis proyectos guardados"><i data-icon="folder-open"></i><span>Mis proyectos</span></button>
+        <button class="tbtn" data-act="export" title="Descargar el proyecto como archivo .json"><i data-icon="download"></i><span>Descargar</span></button>
+        <button class="tbtn" data-act="import" title="Abrir un archivo .json"><i data-icon="upload"></i><span>Abrir archivo</span></button>
+      </div>
+      <div class="tgroup">
+        <button class="tbtn icon-only" data-act="undo" title="Deshacer (Ctrl+Z)"><i data-icon="undo-2"></i></button>
+        <button class="tbtn icon-only" data-act="redo" title="Rehacer (Ctrl+Y)"><i data-icon="redo-2"></i></button>
+      </div>
+      <div class="tgroup">
+        <button class="tbtn toggle" data-act="view" title="Cambiar entre dibujos y símbolos"><i data-icon="shapes"></i><span id="viewLabel">Dibujo</span></button>
+        <button class="tbtn toggle" data-act="flow" title="Ver la corriente moviéndose"><i data-icon="activity"></i><span>Corriente</span></button>
+        <button class="tbtn toggle" data-act="meter" title="Ver voltaje y corriente de cada pieza"><i data-icon="gauge"></i><span>Medidor</span></button>
+        <button class="tbtn toggle icon-only" data-act="sound" title="Sonido"><i data-icon="volume-2"></i></button>
+      </div>
+      <button class="tbtn learn" data-act="learn"><i data-icon="book-open"></i><span>Aprende</span></button>
+    </nav>
+    <input type="file" id="fileInput" accept=".json,application/json" hidden>
+  </header>
+
+  <main class="layout">
+    <aside class="palette" id="palette" aria-label="Piezas"></aside>
+
+    <section class="stage" id="stage">
+      <svg id="board" class="board" tabindex="0" aria-label="Mesa de trabajo de circuitos">
+        <defs>
+          <pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse">
+            <circle cx="10" cy="10" r="1.3" fill="#b9c9da"/>
+          </pattern>
+          <radialGradient id="glow-rojo"><stop offset="0" stop-color="#ff6b6b" stop-opacity=".9"/><stop offset="1" stop-color="#ff6b6b" stop-opacity="0"/></radialGradient>
+          <radialGradient id="glow-amarillo"><stop offset="0" stop-color="#ffe066" stop-opacity=".95"/><stop offset="1" stop-color="#ffe066" stop-opacity="0"/></radialGradient>
+          <radialGradient id="glow-verde"><stop offset="0" stop-color="#5eea8f" stop-opacity=".9"/><stop offset="1" stop-color="#5eea8f" stop-opacity="0"/></radialGradient>
+          <radialGradient id="glow-azul"><stop offset="0" stop-color="#7cb3ff" stop-opacity=".9"/><stop offset="1" stop-color="#7cb3ff" stop-opacity="0"/></radialGradient>
+          <radialGradient id="glow-blanco"><stop offset="0" stop-color="#ffffff" stop-opacity="1"/><stop offset="1" stop-color="#dbeafe" stop-opacity="0"/></radialGradient>
+          <radialGradient id="glow-foco"><stop offset="0" stop-color="#fff3b0" stop-opacity="1"/><stop offset=".5" stop-color="#FFD24A" stop-opacity=".55"/><stop offset="1" stop-color="#FFD24A" stop-opacity="0"/></radialGradient>
+        </defs>
+        <g id="world">
+          <rect x="-6000" y="-6000" width="12000" height="12000" fill="url(#dots)" class="bg"/>
+          <g id="layerWires"></g>
+          <g id="layerComps"></g>
+          <g id="layerTerms"></g>
+          <g id="layerTemp"></g>
+        </g>
+      </svg>
+
+      <div class="empty-hint" id="emptyHint">
+        <img src="img/chispa.svg" alt="">
+        <p><b>¡Tu mesa está vacía!</b><br>Arrastra una <b>Pila</b> y un <b>Foco</b> desde la izquierda.<br>Después une sus puntitos con cables.</p>
+      </div>
+
+      <div class="zoom" aria-label="Zoom">
+        <button data-act="zoomin" title="Acercar"><i data-icon="zoom-in"></i></button>
+        <button data-act="zoomout" title="Alejar"><i data-icon="zoom-out"></i></button>
+        <button data-act="fit" title="Ver todo el circuito"><i data-icon="maximize"></i></button>
+      </div>
+
+      <div class="chispa-bar" id="chispaBar" role="status" aria-live="polite">
+        <img src="img/chispa.svg" alt="Chispa" class="chispa-mini" id="chispaMini">
+        <div class="bubble" id="chispaMsg"></div>
+      </div>
+    </section>
+
+    <aside class="side" id="side">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" data-tab="missions"><i data-icon="target"></i> Misiones</button>
+        <button class="tab" role="tab" data-tab="inspect"><i data-icon="info"></i> Pieza</button>
+      </div>
+      <div class="tabpanel" id="panelMissions"></div>
+      <div class="tabpanel" id="panelInspect" hidden></div>
+    </aside>
+  </main>
+
+  <div class="modal" id="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" data-act="close" title="Cerrar"><i data-icon="x"></i></button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+  <div class="toast" id="toast" hidden></div>
+  <canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
