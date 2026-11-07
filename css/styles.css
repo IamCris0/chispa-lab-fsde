@@ -80,6 +80,9 @@ i[data-icon] { display: inline-flex; font-style: normal; font-size: 1.15em; line
 .board .meter-bg { fill: #fff; stroke: var(--line); }
 .board .meter { font: 800 11px var(--body); fill: var(--navy); }
 .board .term { cursor: crosshair; }
+.board .t-node .node-ring { opacity: .0; transition: opacity .15s; }
+.board .t-node:hover .node-ring, .board .t-node.sel .node-ring { opacity: 1; }
+.board .comp.t-node.sel .hit { stroke: none; }
 .board .term circle.dot { fill: var(--gold-2); stroke: var(--navy); stroke-width: 2.5; transition: r .1s; }
 .board .term.pos circle.dot { fill: #ff8a8a; } .board .term.neg circle.dot { fill: #4a5a6a; }
 .board .term:hover circle.dot, .board .term.hot circle.dot { r: 10; stroke: var(--blue); stroke-width: 3; }
@@ -230,7 +233,7 @@ input[type=range] { width: 100%; accent-color: var(--gold); height: 28px; }
   .tbtn.toggle span { display: none; }
   .tbtn.toggle { padding: 9px; }
 }
-@media (max-width: 1300px) {
+@media (max-width: 1440px) {
   .tbtn span { display: none; }
   .tbtn.learn span { display: inline; }
   .tbtn { padding: 9px; }

@@ -46,7 +46,7 @@ export const currentId = () => read(K.current, null);
 export const getProgress = () => read(K.progress, { missions: {} });
 export const saveProgress = (pr) => write(K.progress, pr);
 
-export const getSettings = () => ({ view: 'dibujo', flow: true, sound: true, meter: false, student: '', welcomed: false, clase: 1, ...read(K.settings, {}) });
+export const getSettings = () => ({ view: 'dibujo', flow: true, sound: true, meter: false, wires: 'rectos', student: '', welcomed: false, clase: 1, ...read(K.settings, {}) });
 export const saveSettings = (s) => write(K.settings, s);
 
 const slug = (s) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40) || 'circuito';
@@ -65,7 +65,7 @@ export function exportProject(p, progress, student) {
   return a.download;
 }
 
-const VALID = new Set(['battery', 'bulb', 'led', 'motor', 'buzzer', 'switch', 'button', 'resistor', 'pot', 'ldr']);
+const VALID = new Set(['battery', 'bulb', 'led', 'motor', 'buzzer', 'switch', 'button', 'resistor', 'pot', 'ldr', 'node']);
 export function parseImport(text) {
   let data;
   try { data = JSON.parse(text); } catch { throw new Error('El archivo no es un .json válido.'); }

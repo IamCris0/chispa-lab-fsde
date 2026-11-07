@@ -107,6 +107,7 @@ export const LESSONS = [
     html: `<ol class="howto"><li><b>Agregar piezas:</b> arrástralas desde la izquierda o haz clic sobre ellas.</li>
       <li><b>Poner cables:</b> haz clic en un puntito amarillo de una pieza y luego en otro puntito.</li>
       <li><b>Mover:</b> arrastra la pieza. <b>Girar:</b> botón Girar o la tecla R.</li>
+      <li><b>Punto de unión:</b> úsalo para repartir cables en paralelo. El botón <b>Cables</b> cambia entre cables rectos y curvos.</li>
       <li><b>Borrar:</b> selecciona la pieza o el cable y presiona Borrar (o la tecla Supr).</li>
       <li><b>Interruptor:</b> haz clic sobre él. <b>Pulsador:</b> mantén presionado el clic.</li>
       <li><b>Deshacer:</b> Ctrl + Z. <b>Mover la mesa:</b> arrastra el fondo. <b>Zoom:</b> rueda del ratón.</li>

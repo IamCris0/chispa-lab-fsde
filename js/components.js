@@ -65,7 +65,13 @@ export const TYPES = {
   },
 };
 
-export const CATS = ['Energía', 'Salidas', 'Control'];
+TYPES.node = {
+  name: 'Punto de unión', cat: 'Cables', props: {},
+  short: 'Une varios cables en un solo punto, como una regleta.',
+  desc: 'El punto de unión sirve para juntar varios cables en un mismo lugar. Es muy útil en los circuitos en paralelo: lleva un cable del + de la pila al punto y desde ahí reparte cables a cada aparato. Arrastra el anillo para moverlo y haz clic en el centro para sacar un cable.',
+  terms: ['punto de unión', ''],
+};
+export const CATS = ['Energía', 'Salidas', 'Control', 'Cables'];
 
 const BAND = ['#1a1a1a', '#8b4513', '#e02424', '#f97316', '#facc15', '#16a34a', '#2563eb', '#7c3aed', '#9ca3af', '#ffffff'];
 export function resistorBands(ohms) {
@@ -119,6 +125,7 @@ function glow(r, color, k, cy = 0) {
 
 export function drawComponent(c, st = {}, view = 'dibujo') {
   const p = c.props || {}, rot = c.rot || 0;
+  if (c.type === 'node') return `<circle r="17" fill="transparent" class="hit"/><circle r="13" fill="none" stroke="#9fb3c8" stroke-width="2" stroke-dasharray="3 3" class="node-ring"/><circle r="6" fill="${INK}"/>`;
   const s = view === 'simbolo' ? drawSymbol(c, st, rot) : drawPicture(c, st, rot);
   // zona transparente para poder agarrar la pieza con facilidad
   return `<rect x="-34" y="-30" width="68" height="60" rx="10" fill="transparent" class="hit"/>` + s;
@@ -281,11 +288,13 @@ function drawSymbol(c, st, rot) {
 
 // Ícono pequeño para la paleta (siempre en vista dibujo, sin efectos)
 export function paletteSVG(type) {
+  if (type === 'node') return `<svg viewBox="-44 -34 88 68" aria-hidden="true"><path d="M-36 -18L0 0M-36 18L0 0M36 -18L0 0M36 18L0 0" stroke="#2b6cb0" stroke-width="5" stroke-linecap="round"/><circle r="8" fill="${INK}"/></svg>`;
   const c = { id: 'pal-' + type, type, rot: 0, props: { ...TYPES[type].props } };
   if (type === 'switch') c.props.on = true;
   return `<svg viewBox="-44 -34 88 68" aria-hidden="true">${drawPicture(c, {}, 0)}</svg>`;
 }
 export function bigSVG(type, view = 'dibujo', props) {
+  if (type === 'node') return paletteSVG('node');
   const c = { id: 'big-' + type, type, rot: 0, props: { ...TYPES[type].props, ...(props || {}) } };
   return `<svg viewBox="-46 -40 92 80" aria-hidden="true">${view === 'simbolo' ? drawSymbol(c, {}, 0) : drawPicture(c, {}, 0)}</svg>`;
 }

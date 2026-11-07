@@ -35,15 +35,57 @@ const L = { wires: $('#layerWires'), comps: $('#layerComps'), terms: $('#layerTe
 // ───────────────────────── Utilidades geométricas ─────────────────────────
 const ROT = { 0: [1, 0], 90: [0, 1], 180: [-1, 0], 270: [0, -1] };
 function termPos(c, t) {
+  if (c.type === 'node') return { x: c.x, y: c.y };
   const [cs, sn] = ROT[c.rot || 0];
   const lx = t ? 40 : -40;
   return { x: c.x + lx * cs, y: c.y + lx * sn };
 }
-function termDir(c, t) { const [cs, sn] = ROT[c.rot || 0]; const d = t ? 1 : -1; return { x: d * cs, y: d * sn }; }
+function termDir(c, t) { if (c.type === 'node') return { x: 0, y: 0 }; const [cs, sn] = ROT[c.rot || 0]; const d = t ? 1 : -1; return { x: d * cs, y: d * sn }; }
 const byId = (id) => project.components.find((c) => c.id === id);
 const snap = (v) => Math.round(v / GRID) * GRID;
 
-function wirePathD(pa, da, pb, db) {
+// Cables en ángulo recto: prueba varias rutas y elige la más corta que no atraviese piezas
+function boxes() {
+  return project.components.filter((c) => c.type !== 'node').map((c) => {
+    const v = (c.rot || 0) % 180 !== 0, hw = v ? 24 : 32, hh = v ? 32 : 24;
+    return { id: c.id, x0: c.x - hw, x1: c.x + hw, y0: c.y - hh, y1: c.y + hh };
+  });
+}
+function segHits(p, q, b) {
+  const x0 = Math.min(p.x, q.x), x1 = Math.max(p.x, q.x), y0 = Math.min(p.y, q.y), y1 = Math.max(p.y, q.y);
+  return x1 > b.x0 && x0 < b.x1 && y1 > b.y0 && y0 < b.y1;
+}
+function orthoPathD(pa, da, pb, db, bx) {
+  const S = 20;
+  const a = { x: pa.x + da.x * S, y: pa.y + da.y * S }, b = { x: pb.x + db.x * S, y: pb.y + db.y * S };
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  const top = Math.min(a.y, b.y) - 40, bot = Math.max(a.y, b.y) + 40, lef = Math.min(a.x, b.x) - 40, rig = Math.max(a.x, b.x) + 40;
+  const mids = [
+    [{ x: mx, y: a.y }, { x: mx, y: b.y }], [{ x: a.x, y: my }, { x: b.x, y: my }],
+    [{ x: b.x, y: a.y }], [{ x: a.x, y: b.y }],
+    [{ x: a.x, y: top }, { x: b.x, y: top }], [{ x: a.x, y: bot }, { x: b.x, y: bot }],
+    [{ x: lef, y: a.y }, { x: lef, y: b.y }], [{ x: rig, y: a.y }, { x: rig, y: b.y }],
+  ];
+  let best = null, bestScore = Infinity;
+  for (const m of mids) {
+    const pts = [a, ...m, b];
+    let score = 0;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p = pts[i], q = pts[i + 1], dx = q.x - p.x, dy = q.y - p.y, len = Math.abs(dx) + Math.abs(dy);
+      score += len;
+      if (len < 0.5) continue;
+      if (i === 0 && (Math.sign(dx) * da.x + Math.sign(dy) * da.y) < 0) score += 800; // sale hacia atrás
+      if (i === pts.length - 2 && (Math.sign(dx) * db.x + Math.sign(dy) * db.y) > 0) score += 800; // entra por detrás
+      for (const bb of bx) if (segHits(p, q, bb)) score += 400;
+      if (i > 0 && i < pts.length - 2) score += 10; // cada esquina extra cuesta un poco
+    }
+    if (score < bestScore) { bestScore = score; best = pts; }
+  }
+  const all = [pa, ...best, pb].filter((p, i, arr) => i === 0 || Math.abs(p.x - arr[i - 1].x) + Math.abs(p.y - arr[i - 1].y) > 0.5);
+  return 'M' + all.map((p) => `${p.x} ${p.y}`).join('L');
+}
+function wirePathD(pa, da, pb, db, bx) {
+  if (settings.wires !== 'curvos' && bx) return orthoPathD(pa, da, pb, db, bx);
   const dist = Math.hypot(pb.x - pa.x, pb.y - pa.y);
   const k = Math.min(90, Math.max(28, dist * 0.35));
   return `M${pa.x} ${pa.y}C${pa.x + da.x * k} ${pa.y + da.y * k} ${pb.x + db.x * k} ${pb.y + db.y * k} ${pb.x} ${pb.y}`;
@@ -166,10 +208,11 @@ function renderBoard() {
   anim = { flows: [], rotors: [], waves: [] };
   // cables
   L.wires.replaceChildren();
+  const bx = boxes();
   for (const w of project.wires) {
     const ca = byId(w.a.c), cb = byId(w.b.c);
     if (!ca || !cb) continue;
-    const d = wirePathD(termPos(ca, w.a.t), termDir(ca, w.a.t), termPos(cb, w.b.t), termDir(cb, w.b.t));
+    const d = wirePathD(termPos(ca, w.a.t), termDir(ca, w.a.t), termPos(cb, w.b.t), termDir(cb, w.b.t), bx);
     const g = el('g', { class: 'wire' + (selection?.kind === 'wire' && selection.id === w.id ? ' sel' : ''), 'data-wire': w.id });
     g.append(el('path', { d, class: 'w-out', 'stroke-width': 10, fill: 'none', 'stroke-linecap': 'round' }));
     g.append(el('path', { d, stroke: WIRE_COLORS[w.color] || WIRE_COLORS.azul, 'stroke-width': 6, fill: 'none', 'stroke-linecap': 'round' }));
@@ -198,7 +241,7 @@ function renderBoard() {
     const anchor = vertical ? 'start' : 'middle';
     let lines = [];
     if (['resistor', 'pot', 'ldr'].includes(c.type)) lines.push({ t: compLabel(c), cls: 'label' });
-    if (settings.meter && c.type !== 'switch' && c.type !== 'button') lines.push({ t: `${fmtVolt(st.v || 0)} · ${fmtCurrent(st.i || 0)}`, cls: 'meter' });
+    if (settings.meter && !['switch', 'button', 'node'].includes(c.type)) lines.push({ t: `${fmtVolt(st.v || 0)} · ${fmtCurrent(st.i || 0)}`, cls: 'meter' });
     lines.forEach((ln, k) => {
       const y = ly + 4 + k * 15;
       if (ln.cls === 'meter') {
@@ -208,11 +251,11 @@ function renderBoard() {
       const tx = el('text', { x: lx, y, 'text-anchor': anchor, class: ln.cls }); tx.textContent = ln.t; L.comps.append(tx);
     });
     // terminales
-    for (const t of [0, 1]) {
+    for (const t of c.type === 'node' ? [0] : [0, 1]) {
       const p = termPos(c, t);
       const pol = POLAR.has(c.type) && c.type !== 'motor' ? (t === 0 ? ' pos' : ' neg') : '';
       const tg = el('g', { class: 'term' + pol, 'data-term': `${c.id}:${t}`, transform: `translate(${p.x} ${p.y})` });
-      tg.append(el('circle', { r: 14, class: 'halo' }), el('circle', { r: 7, class: 'dot' }));
+      tg.append(el('circle', { r: c.type === 'node' ? 8 : 14, class: 'halo' }), el('circle', { r: 7, class: 'dot' }));
       const title = el('title'); title.textContent = `${TYPES[c.type].name}: ${TYPES[c.type].terms[t]}`; tg.append(title);
       L.terms.append(tg);
     }
@@ -570,12 +613,12 @@ function renderInspector() {
   P.innerHTML = `<div class="insp-head">${bigSVG(c.type, settings.view, { ...p, burned: false })}<div><h3 class="panel-title">${t.name}</h3><span class="muted small">${esc(t.short)}</span></div></div>
     <p class="insp-desc">${t.desc}</p>
     ${fields}
-    <div class="readings">
+    ${c.type === 'node' ? '' : `<div class="readings">
       <div class="reading"><small>Voltaje (empuje)</small><b id="rdV">${fmtVolt(st.v || 0)}</b></div>
       <div class="reading"><small>${c.type === 'battery' ? 'Corriente que entrega' : 'Corriente que pasa'}</small><b id="rdI">${fmtCurrent(st.i || 0)}</b></div>
-    </div>
+    </div>`}
     <div class="actions">
-      <button class="btn" data-do="rotate" title="Tecla R">${icon('rotate-cw')} Girar</button>
+      ${c.type === 'node' ? '' : `<button class="btn" data-do="rotate" title="Tecla R">${icon('rotate-cw')} Girar</button>`}
       ${polarNote}
       <button class="btn danger" data-do="delete" title="Tecla Supr">${icon('trash-2')} Borrar</button>
     </div>`;
@@ -787,6 +830,7 @@ document.addEventListener('click', (e) => {
     case 'import': $('#fileInput').click(); break;
     case 'undo': undo(); break;
     case 'redo': redo(); break;
+    case 'wires': settings.wires = settings.wires === 'curvos' ? 'rectos' : 'curvos'; saveToggles(); renderBoard(); break;
     case 'view': settings.view = settings.view === 'dibujo' ? 'simbolo' : 'dibujo'; saveToggles(); renderBoard(); renderInspector(); break;
     case 'flow': settings.flow = !settings.flow; saveToggles(); break;
     case 'meter': settings.meter = !settings.meter; saveToggles(); renderBoard(); break;
@@ -802,6 +846,7 @@ function saveToggles() {
   store.saveSettings(settings);
   $('[data-act=view]').classList.toggle('on', settings.view === 'simbolo');
   $('#viewLabel').textContent = settings.view === 'simbolo' ? 'Símbolos' : 'Dibujo';
+  $('#wiresLabel').textContent = settings.wires === 'curvos' ? 'Curvos' : 'Rectos';
   $('[data-act=flow]').classList.toggle('on', settings.flow);
   $('[data-act=meter]').classList.toggle('on', settings.meter);
   const s = $('[data-act=sound]'); s.classList.toggle('on', settings.sound); s.innerHTML = `<i>${icon(settings.sound ? 'volume-2' : 'volume-x')}</i>`;
