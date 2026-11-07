@@ -1,5 +1,5 @@
 // Service worker: guarda la app en caché para que cargue rápido y funcione sin internet.
-const CACHE = 'chispa-v2';
+const CACHE = 'chispa-v3';
 const ASSETS = [
   './', 'index.html', 'css/styles.css', 'manifest.webmanifest',
   'js/app.js', 'js/solver.js', 'js/components.js', 'js/missions.js', 'js/lessons.js', 'js/storage.js', 'js/icons.js',

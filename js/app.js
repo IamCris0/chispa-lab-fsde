@@ -889,7 +889,11 @@ function init() {
   requestAnimationFrame(tick);
   if (!settings.welcomed) showWelcome();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    // si llega una versión nueva del laboratorio, recargar una sola vez para usarla
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !reloaded) { reloaded = true; persist(); location.reload(); } });
+    addEventListener('load', () => navigator.serviceWorker.register('sw.js').then((r) => r.update()).catch(() => {}));
   }
 }
 init();
