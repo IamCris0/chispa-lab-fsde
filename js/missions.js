@@ -51,10 +51,18 @@ export const MISSIONS = [
     },
   },
   {
+    id: 'c1-linterna', clase: 1, title: 'Linterna de bolsillo',
+    goal: 'Construye una linterna: el foco prende solo mientras presionas el botón.',
+    steps: ['Presiona "Nuevo" para empezar un circuito limpio.', 'Une: + de la pila → Pulsador → Foco → − de la pila.', 'Mantén presionado el clic sobre el pulsador: ¡luz! Suéltalo: se apaga.'],
+    hint: 'El pulsador va en el mismo camino que el foco, igual que el interruptor.',
+    learn: 'Las linternas, los timbres y los controles remotos usan pulsadores: funcionan solo mientras los presionas.',
+    check: (h) => h.litBulbs().length > 0 && h.of('button').some(b => h.pressed(b) && Math.abs(h.st(b).i) > 0.01),
+  },
+  {
     id: 'c1-led', clase: 1, title: 'Enciende un LED sin quemarlo',
     goal: 'Conecta un LED con una resistencia para protegerlo.',
-    steps: ['Pon una Pila, una Resistencia y un LED.', 'Une: + de la pila → resistencia → pata + del LED.', 'Une la pata − del LED con el − de la pila.'],
-    hint: 'Si el LED se quema, selecciónalo y presiona "Poner un LED nuevo". ¡No olvides la resistencia!',
+    steps: ['Pon una Pila, una Resistencia y un LED.', 'Une: + de la pila → resistencia → pata + del LED.', 'Une la pata − del LED con el − de la pila. La resistencia va EN EL CAMINO del LED, no al lado.'],
+    hint: 'Si el LED se quema, selecciónalo y presiona "Poner un LED nuevo". Revisa que la corriente pase PRIMERO por la resistencia y DESPUÉS por el LED: un solo camino.',
     learn: 'La resistencia frena la corriente para que el LED no reciba demasiada y se queme.',
     check: (h) => h.litLeds().length > 0 && h.of('resistor').some(r => Math.abs(h.st(r).i) > 0.001),
   },
@@ -86,6 +94,14 @@ export const MISSIONS = [
       }
       return !!(seen.low && seen.high);
     },
+  },
+  {
+    id: 'c1-arcoiris', clase: 1, title: 'Arcoíris de LED',
+    goal: 'Prende 3 LED de colores diferentes a la vez, sin quemar ninguno.',
+    steps: ['Pon una pila de 9 V y 3 LED. Cambia su color en el panel Pieza (rojo, verde, azul…).', 'Cada LED necesita SU PROPIA resistencia en su camino.', 'Usa Puntos de unión (sección Cables) para que los 3 caminos salgan del + y lleguen al − de la pila.'],
+    hint: 'Son 3 circuitos de "resistencia + LED" que comparten la misma pila (en paralelo).',
+    learn: 'Cada LED con su propia resistencia: así funcionan las tiras de luces y las pantallas.',
+    check: (h) => new Set(h.litLeds().map(l => l.props.color)).size >= 3,
   },
   // ───────── CLASE 2 ─────────
   {

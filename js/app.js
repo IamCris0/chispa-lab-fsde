@@ -154,8 +154,12 @@ function resolve() {
     persist();
     const c = byId(result.burnedNow[0]);
     sfx('pop');
+    const maxV = Math.max(0, ...project.components.filter((b) => b.type === 'battery').map((b) => b.props.volts || 0));
+    const sideR = project.components.some((r) => r.type === 'resistor' && maxV && Math.abs(result.comps[r.id]?.v || 0) > maxV * 0.85);
     say(c.type === 'led'
-      ? '¡Uy! El LED se quemó: le llegó demasiada corriente. Ponle una <b>resistencia</b> en el camino y cámbialo por uno nuevo.'
+      ? (sideR
+        ? '¡Uy! El LED se quemó aunque hay una resistencia: está <b>al lado</b> del LED (en paralelo), no <b>en su camino</b>. La corriente debe pasar por la resistencia y DESPUÉS por el LED: <b>+ → resistencia → LED → −</b>.'
+        : '¡Uy! El LED se quemó: le llegó demasiada corriente. Ponle una <b>resistencia</b> en el camino y cámbialo por uno nuevo.')
       : '¡El foco se fundió! Tenía demasiada corriente.', 'warn', 'burn');
   }
   const newly = evaluate(project, result, runtime, progress, seen);
